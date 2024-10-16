@@ -2,7 +2,7 @@
 import { AuthenticateSectionEnum } from '~/types/account/authenticate'
 
 definePageMeta({
-  layout: 'auth',  
+  layout: 'auth',
 })
 useHead({
   title: 'ورود / ثبت نام',
@@ -12,22 +12,24 @@ const canLoginWithPassword = ref<boolean>(false)
 const authenticateSection = ref<AuthenticateSectionEnum>(
   AuthenticateSectionEnum.CHECK,
 )
+
 interface sectionsType {
   name: string
   component: any
 }
+
 const sections = shallowRef<sectionsType[]>([
   {
     name: AuthenticateSectionEnum.CHECK,
-    component: resolveComponent('PagesAuthCheck'),
+    component: resolveComponent('PagesAuthLoginCheck'),
   },
   {
     name: AuthenticateSectionEnum.OTP,
-    component: resolveComponent('PagesAuthOneTimePassword'),
+    component: resolveComponent('PagesAuthLoginOneTimePassword'),
   },
   {
     name: AuthenticateSectionEnum.PASSWORD,
-    component: resolveComponent('PagesAuthPassword'),
+    component: resolveComponent('PagesAuthLoginPassword'),
   },
 ])
 </script>

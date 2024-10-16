@@ -2,20 +2,17 @@
 import { toast } from 'vue-sonner'
 import InputOtp from '~/components/ui/input-otp/InputOtp.vue'
 import { RequestVerificationOTP } from '~/services/messages-verification'
-import { UserAuthenticateOneTimePassword } from '~/services/user'
-import { AuthenticateSectionEnum } from '~/types/account/authenticate'
+import { UserForgotPasswordOneTimePassword } from '~/services/user'
+import { ForgotPasswordSectionEnum } from '~/types/account/authenticate'
 import { RequestVerificationOtpUsageEnum } from '~/types/messages'
 
-const canLoginWithPassword = defineModel<boolean>('canLoginWithPassword', {
+const username: Ref<string> = defineModel<string>('username', {
   required: true,
 })
-const username = defineModel<string>('username', { required: true })
-const authenticateSection = defineModel<AuthenticateSectionEnum>(
-  'authenticate-section',
-  {
-    required: true,
-  },
-)
+const forgotSection = defineModel<ForgotPasswordSectionEnum>('forgot-section', {
+  required: true,
+})
+
 const pinCount = 4
 const otp = ref<string>('')
 const isValidInput = computed(() => otp.value.length === pinCount)
@@ -26,15 +23,14 @@ const newOtpLoading = ref<boolean>(false)
 
 function getBack() {
   username.value = ''
-  authenticateSection.value = AuthenticateSectionEnum.CHECK
+  forgotSection.value = ForgotPasswordSectionEnum.CHECK
 }
-function redirectToPassword() {
-  authenticateSection.value = AuthenticateSectionEnum.PASSWORD
-}
+
 const { isPending, startTimer, getFormattedCounter, resetTimer } = useTimer({
   minute: 4,
 })
 onMounted(() => startTimer())
+
 async function requestNewOTP() {
   if (newOtpLoading.value || !validateUsername(username.value))
     return
@@ -50,9 +46,10 @@ async function requestNewOTP() {
     resetTimer()
   }
   else {
-    authenticateSection.value = AuthenticateSectionEnum.CHECK
+    forgotSection.value = ForgotPasswordSectionEnum.CHECK
   }
 }
+
 function getMessage(): string {
   if (validatePhoneNumber(username.value))
     return `کد تایید به شماره ${username.value} پیامک شد`
@@ -60,18 +57,20 @@ function getMessage(): string {
     return `کد تایید به ایمیل ${username.value} ارسال شد`
   else return ''
 }
-const authStore = useAuthenticateStore()
 
 async function submit() {
   loading.value = true
   try {
-    const result = await UserAuthenticateOneTimePassword(
+    const result = await UserForgotPasswordOneTimePassword(
       username.value,
       otp.value,
     )
     if (result.success) {
-      toast(result.message)
-      authStore.Login(result.data)
+      localStorage.setItem(
+        'forgotPasswordToken',
+        JSON.stringify(result.data.token),
+      )
+      forgotSection.value = ForgotPasswordSectionEnum.RESET
     }
     else {
       inputErrorMessage.value = result.message
@@ -136,19 +135,6 @@ watch(otp, () => {
               <Icon name="lucide-chevron-left" class="size-5" />
             </span>
           </template>
-        </button>
-      </li>
-      <li v-if="canLoginWithPassword">
-        <button
-          type="button"
-          class="flex items-center gap-x-1 text-sm text-primary duration-200 hover:text-primary/80"
-          :disabled="loading"
-          @click="redirectToPassword"
-        >
-          <span> ورود با رمز عبور </span>
-          <span>
-            <Icon name="lucide-chevron-left" class="size-5" />
-          </span>
         </button>
       </li>
     </ul>

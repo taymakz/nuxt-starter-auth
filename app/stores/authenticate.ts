@@ -59,105 +59,114 @@ export const useAuthenticateStore = defineStore('authenticate', () => {
   }
 
   // Actions - Authentication
-  const SetUserDetail = useMemoize(async () => {
-    loading.value = true
-    if (import.meta.server) {
-      loading.value = false
-      return
-    }
-    const tokens = localStorage.getItem('authTokens')
-    if (!tokens) {
-      loading.value = false
-      return
-    }
-
-    const parsed_tokens = JSON.parse(tokens) as AuthenticateTokensType
-    if (!parsed_tokens.access || !parsed_tokens.refresh) {
-      loading.value = false
-      return
-    }
-    userTokens.value = parsed_tokens
-
-    const decoded_token = jwtDecode(userTokens.value.access) as {
-      exp: number
-      iat: number
-      jti: string
-      token_type: string
-      user_id: number
-    }
-    const currentTimestamp: number = Math.floor(Date.now() / 1000)
-
-    if (decoded_token.exp && decoded_token.exp < currentTimestamp) {
-      await useAuthenticateStore().RefreshToken()
-    }
-
-    loading.value = true
-    try {
-      const result = await UserGetCurrentDetail()
-      if (result.success) {
-        userDetail.value = result.data
+  const SetUserDetail = useMemoize(
+    async () => {
+      loading.value = true
+      if (import.meta.server) {
+        loading.value = false
+        return
       }
-      else {
-        if (result.status) {
-          userTokens.value = null
-          localStorage.removeItem('authTokens')
-        }
+      const tokens = localStorage.getItem('authTokens')
+      if (!tokens) {
+        loading.value = false
+        return
       }
-    }
-    catch (error) {
-      console.error('Error fetching user detail:', error)
-      // Handle error appropriately
-    }
-    finally {
-      loading.value = false
-    }
-  }, { cache: createSimpleMemoizeExpiringCache(2000) })
 
-  const RefreshToken = useMemoize(async () => {
-    const tokens = userTokens.value
-    if (!tokens || !tokens.refresh) {
-      userTokens.value = null
-      userDetail.value = null
-      localStorage.removeItem('authTokens')
-      return
-    }
-    let response
-    do {
+      const parsed_tokens = JSON.parse(tokens) as AuthenticateTokensType
+      if (!parsed_tokens.access || !parsed_tokens.refresh) {
+        loading.value = false
+        return
+      }
+      userTokens.value = parsed_tokens
+
+      const decoded_token = jwtDecode(userTokens.value.access) as {
+        exp: number
+        iat: number
+        jti: string
+        token_type: string
+        user_id: number
+      }
+      const currentTimestamp: number = Math.floor(Date.now() / 1000)
+
+      if (decoded_token.exp && decoded_token.exp < currentTimestamp) {
+        await useAuthenticateStore().RefreshToken()
+      }
+
+      loading.value = true
       try {
-        response = await RefreshUserToken(tokens.refresh)
-        const data = await response.json()
-
-        if (response.status === 200) {
-          userTokens.value = {
-            refresh: tokens.refresh,
-            access: data.access,
-          }
-          localStorage.removeItem('authTokens')
-          localStorage.setItem('authTokens', JSON.stringify(userTokens.value))
-        }
-        else if (response.status === 401) {
-          // Unauthorized error
-          userTokens.value = null
-          userDetail.value = null
-          localStorage.removeItem('authTokens')
+        const result = await UserGetCurrentDetail()
+        if (result.success) {
+          userDetail.value = result.data
         }
         else {
-          // Handle other status codes or unexpected errors
-          console.error('Token refresh failed with status:', response.status)
-          break // Exit the loop in case of unexpected errors
+          if (result.status) {
+            userTokens.value = null
+            localStorage.removeItem('authTokens')
+          }
         }
       }
       catch (error) {
-        console.error('Error during token refresh:', error)
-        // Add a delay before retrying (e.g., using setTimeout)
-        await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
+        console.error('Error fetching user detail:', error)
+        // Handle error appropriately
       }
-    } while (
-      response!.status !== 200
-      && response!.statusText !== 'Unauthorized'
-      && response!.status !== 401
-    )
-  }, { cache: createSimpleMemoizeExpiringCache(4000) })
+      finally {
+        loading.value = false
+      }
+    },
+    { cache: createSimpleMemoizeExpiringCache(2000) },
+  )
+
+  const RefreshToken = useMemoize(
+    async () => {
+      const tokens = userTokens.value
+      if (!tokens || !tokens.refresh) {
+        userTokens.value = null
+        userDetail.value = null
+        localStorage.removeItem('authTokens')
+        return
+      }
+      let response
+      do {
+        try {
+          response = await RefreshUserToken(tokens.refresh)
+          const data = await response.json()
+
+          if (response.status === 200) {
+            userTokens.value = {
+              refresh: tokens.refresh,
+              access: data.access,
+            }
+            localStorage.removeItem('authTokens')
+            localStorage.setItem(
+              'authTokens',
+              JSON.stringify(userTokens.value),
+            )
+          }
+          else if (response.status === 401) {
+            // Unauthorized error
+            userTokens.value = null
+            userDetail.value = null
+            localStorage.removeItem('authTokens')
+          }
+          else {
+            // Handle other status codes or unexpected errors
+            console.error('Token refresh failed with status:', response.status)
+            break // Exit the loop in case of unexpected errors
+          }
+        }
+        catch (error) {
+          console.error('Error during token refresh:', error)
+          // Add a delay before retrying (e.g., using setTimeout)
+          await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
+        }
+      } while (
+        response!.status !== 200
+        && response!.statusText !== 'Unauthorized'
+        && response!.status !== 401
+      )
+    },
+    { cache: createSimpleMemoizeExpiringCache(4000) },
+  )
   const RedirectToLogin = () => {
     const route = useRoute()
     return navigateTo(`/auth/login?backUrl=${route.fullPath}`)

@@ -19,12 +19,14 @@ Yup.setLocale({
     min: ' حداقل مقدار ${path} ${min} است',
   },
 })
+
 function trimWhitespaceTransformer(value: any, originalValue: any) {
   if (typeof originalValue === 'string')
     return originalValue.trim() // Trim whitespace from string values
 
   return originalValue // Return original value for non-string values
 }
+
 // Schemas
 export const schemaUsername = Yup.object().shape({
   username: Yup.string()
@@ -67,45 +69,4 @@ export const schemaChangePassword = Yup.object().shape({
     [Yup.ref('password')],
     'کلمه های عبور یکسان نیستند',
   ),
-})
-
-// Banners
-export const schemaBannersCreateUpdate = Yup.object().shape({
-  title: Yup.string().required(),
-  url: Yup.string().required().url(),
-})
-
-// Links
-export const schemaLinksHeaderCreateUpdate = Yup.object().shape({
-  title: Yup.string().required(),
-})
-export const schemaLinksFooterCreateUpdate = Yup.object().shape({
-  title: Yup.string().required(),
-})
-
-export const schemaCategoryCreateUpdate = Yup.object().shape({
-  title_ir: Yup.string().required(),
-  title_en: Yup.string().required(),
-})
-export const schemaBrandCreateUpdate = Yup.object().shape({
-  title_ir: Yup.string().required(),
-  title_en: Yup.string().required(),
-})
-export const schemaVariantGroupCreateUpdate = Yup.object().shape({
-  title_ir: Yup.string().required(),
-  title_en: Yup.string().required(),
-})
-export const schemaVariantGroupValueCreateUpdate = Yup.object().shape({
-  title: Yup.string().required(),
-})
-export const schemaProductPropertyCreateUpdate = Yup.object().shape({
-  name: Yup.string().required(),
-})
-export const schemaProductClassCreateUpdate = Yup.object().shape({
-  title_ir: Yup.string().required(),
-  title_en: Yup.string().required(),
-})
-
-export const schemaProductPropertyValueCreateUpdate = Yup.object().shape({
-  value: Yup.string().required(),
 })
